@@ -1,0 +1,2 @@
+# GenieNews
+AI News
