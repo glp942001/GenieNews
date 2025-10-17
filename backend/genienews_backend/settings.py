@@ -156,3 +156,26 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+# Celery Beat Schedule for Weekly Feed Ingestion
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'ingest-feeds-weekly': {
+        'task': 'news.tasks.ingest_all_feeds_task',
+        'schedule': crontab(day_of_week=1, hour=2, minute=0),  # Every Monday at 2 AM
+    },
+    'fetch-missing-content-weekly': {
+        'task': 'news.tasks.fetch_missing_content_task',
+        'schedule': crontab(day_of_week=1, hour=4, minute=0),  # Every Monday at 4 AM (after ingestion)
+    },
+}
+
+# Feed Ingestion Configuration
+FEED_FETCH_TIMEOUT = int(os.getenv('FEED_FETCH_TIMEOUT', '30'))
+FEED_USER_AGENT = os.getenv('FEED_USER_AGENT', 'GenieNewsBot/1.0')
+CONTENT_FETCH_TIMEOUT = int(os.getenv('CONTENT_FETCH_TIMEOUT', '60'))
+MAX_RETRIES = int(os.getenv('MAX_RETRIES', '3'))
+ENABLE_PLAYWRIGHT = os.getenv('ENABLE_PLAYWRIGHT', 'false').lower() == 'true'
+PLAYWRIGHT_HEADLESS = os.getenv('PLAYWRIGHT_HEADLESS', 'true').lower() == 'true'
+RATE_LIMIT_DELAY = int(os.getenv('RATE_LIMIT_DELAY', '3'))

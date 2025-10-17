@@ -1,12 +1,23 @@
 from django.contrib import admin
-from .models import Source, ArticleRaw, MediaAsset, ArticleCurated, UserInteraction
+from .models import Source, ArticleRaw, MediaAsset, ArticleCurated, UserInteraction, FeedIngestionLog
 
 
 @admin.register(Source)
 class SourceAdmin(admin.ModelAdmin):
-    list_display = ['name', 'feed_url', 'active', 'created_at']
-    list_filter = ['active', 'created_at']
+    list_display = ['name', 'feed_url', 'active', 'last_fetched_at', 'error_count', 'created_at']
+    list_filter = ['active', 'requires_javascript', 'created_at', 'last_fetched_at']
     search_fields = ['name', 'feed_url', 'site_url']
+    fieldsets = (
+        ('Basic Info', {
+            'fields': ('name', 'feed_url', 'site_url', 'active')
+        }),
+        ('Ingestion Settings', {
+            'fields': ('fetch_interval_minutes', 'max_articles_per_fetch', 'requires_javascript', 'custom_headers')
+        }),
+        ('Status', {
+            'fields': ('last_fetched_at', 'last_error', 'error_count')
+        }),
+    )
 
 
 @admin.register(ArticleRaw)
@@ -40,3 +51,13 @@ class UserInteractionAdmin(admin.ModelAdmin):
     search_fields = ['user_id', 'article__raw_article__title']
     raw_id_fields = ['article']
     date_hierarchy = 'timestamp'
+
+
+@admin.register(FeedIngestionLog)
+class FeedIngestionLogAdmin(admin.ModelAdmin):
+    list_display = ['source', 'status', 'articles_found', 'articles_created', 'started_at', 'execution_time_seconds']
+    list_filter = ['status', 'started_at', 'source']
+    search_fields = ['source__name', 'error_message']
+    raw_id_fields = ['source']
+    date_hierarchy = 'started_at'
+    readonly_fields = ['started_at', 'completed_at', 'execution_time_seconds']
