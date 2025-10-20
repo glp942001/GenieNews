@@ -36,6 +36,7 @@ class ArticleRaw(models.Model):
     published_at = models.DateTimeField()
     summary_feed = models.TextField()
     raw_html = models.TextField(blank=True, null=True)
+    media_assets = models.ManyToManyField('MediaAsset', blank=True, related_name='articles')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

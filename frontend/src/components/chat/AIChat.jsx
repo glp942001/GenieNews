@@ -52,7 +52,7 @@ const AIChat = () => {
   }
 
   return (
-    <div className="bg-gray-900 border-2 border-gray-700 shadow-md h-full flex flex-col min-h-[600px]">
+    <div className="bg-gray-900 border-2 border-gray-700 shadow-md h-full flex flex-col">
       {/* Chat Header */}
       <div className="bg-gray-800 text-white p-4 border-b border-gray-700">
         <h3 className="text-lg font-semibold">AI Assistant</h3>

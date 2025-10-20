@@ -169,6 +169,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'news.tasks.fetch_missing_content_task',
         'schedule': crontab(day_of_week=1, hour=4, minute=0),  # Every Monday at 4 AM (after ingestion)
     },
+    'curate-articles-hourly': {
+        'task': 'news.tasks.curate_articles_task',
+        'schedule': crontab(minute=0),  # Every hour on the hour
+    },
 }
 
 # Feed Ingestion Configuration
@@ -179,3 +183,21 @@ MAX_RETRIES = int(os.getenv('MAX_RETRIES', '3'))
 ENABLE_PLAYWRIGHT = os.getenv('ENABLE_PLAYWRIGHT', 'false').lower() == 'true'
 PLAYWRIGHT_HEADLESS = os.getenv('PLAYWRIGHT_HEADLESS', 'true').lower() == 'true'
 RATE_LIMIT_DELAY = int(os.getenv('RATE_LIMIT_DELAY', '3'))
+
+# OpenAI Configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', 'sk-mock-key-replace-later')
+AI_MODEL = os.getenv('AI_MODEL', 'gpt-4')
+EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'text-embedding-3-small')
+AI_TEMPERATURE = float(os.getenv('AI_TEMPERATURE', '0.3'))
+AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '1000'))
+
+# AI Curation Configuration
+AI_RELEVANCE_KEYWORDS = os.getenv(
+    'AI_RELEVANCE_KEYWORDS',
+    'artificial intelligence,machine learning,AI,deep learning,neural networks,'
+    'LLM,GPT,transformers,computer vision,NLP,natural language processing,'
+    'robotics,AI research,generative AI,large language model,autonomous systems,'
+    'reinforcement learning'
+).split(',')
+AI_RELEVANCE_THRESHOLD = float(os.getenv('AI_RELEVANCE_THRESHOLD', '0.3'))
+AI_BATCH_SIZE = int(os.getenv('AI_BATCH_SIZE', '20'))

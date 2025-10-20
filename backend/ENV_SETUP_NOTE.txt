@@ -1,0 +1,42 @@
+IMPORTANT: Environment Setup Required
+======================================
+
+The .env file is in .gitignore and must be created manually.
+
+QUICK SETUP:
+Run the automated setup script:
+    cd backend
+    ./setup_ai_curation.sh
+
+This will:
+  ✓ Create .env file with all required variables
+  ✓ Prompt you for OpenAI API key
+  ✓ Install dependencies
+  ✓ Run database migrations
+
+MANUAL SETUP:
+If you prefer to create .env manually, you need these variables:
+
+OPENAI_API_KEY=sk-your-actual-key-here    ← REQUIRED!
+AI_MODEL=gpt-4
+EMBEDDING_MODEL=text-embedding-3-small
+AI_TEMPERATURE=0.3
+AI_MAX_TOKENS=1000
+AI_RELEVANCE_KEYWORDS=artificial intelligence,machine learning,AI,deep learning,neural networks,LLM,GPT,transformers,computer vision,NLP,natural language processing,robotics,AI research,generative AI,large language model,autonomous systems,reinforcement learning
+AI_RELEVANCE_THRESHOLD=0.3
+AI_BATCH_SIZE=20
+
+See AI_CURATION_QUICKSTART.md for complete .env template.
+
+GET YOUR OPENAI API KEY:
+Visit: https://platform.openai.com/api-keys
+
+VERIFY SETUP:
+After adding your API key, test with:
+    python manage.py test_curation --latest
+
+DOCUMENTATION:
+  • AI_CURATION_QUICKSTART.md - Quick start guide
+  • AI_CURATION_GUIDE.md - Complete documentation
+  • AI_CURATION_IMPLEMENTATION_SUMMARY.md - What was built
+

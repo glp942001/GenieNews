@@ -148,13 +148,19 @@ def ingest_single_feed_task(source_id: int):
         
         logger.info(f"Successfully processed {source.name}: {articles_created} created, {articles_updated} updated")
         
+        # Trigger curation task if new articles were created
+        if articles_created > 0:
+            logger.info(f"Triggering curation for {articles_created} new articles")
+            curate_articles_task.delay(batch_size=articles_created)
+        
         return {
             "status": "success",
             "source_name": source.name,
             "articles_found": len(entries),
             "articles_created": articles_created,
             "articles_updated": articles_updated,
-            "execution_time": time.time() - start_time
+            "execution_time": time.time() - start_time,
+            "curation_triggered": articles_created > 0
         }
         
     except Exception as e:
@@ -377,27 +383,158 @@ def fetch_article_content_task(article_id: int):
 
 
 @shared_task
-def curate_articles_task():
+def curate_articles_task(batch_size: int = None):
     """
     Celery task to curate raw articles using AI.
     
     This task will:
     1. Fetch uncurated ArticleRaw entries
     2. Generate AI summaries (short and detailed)
-    3. Create embeddings using OpenAI/similar API
+    3. Create embeddings using OpenAI API
     4. Calculate relevance scores
     5. Generate AI tags
     6. Create ArticleCurated entries
     
-    TODO: Implement AI curation logic
-    - Integrate with OpenAI API or similar
-    - Generate embeddings for vector similarity search
-    - Implement relevance scoring algorithm
-    - Schedule this task to run after ingestion
+    Args:
+        batch_size: Number of articles to process (defaults to settings.AI_BATCH_SIZE)
     """
-    logger.info("curate_articles_task called - implementation pending")
-    # Implementation coming soon
-    pass
+    from django.conf import settings
+    from django.db.models import Q
+    from .models import ArticleRaw, ArticleCurated, MediaAsset
+    from .ai_service import get_ai_service, AIServiceError
+    
+    start_time = time.time()
+    batch_size = batch_size or settings.AI_BATCH_SIZE
+    
+    logger.info("Starting AI curation task")
+    
+    # Get uncurated articles
+    uncurated_articles = ArticleRaw.objects.filter(
+        Q(curated__isnull=True)
+    ).select_related('source').prefetch_related('media_assets')[:batch_size]
+    
+    if not uncurated_articles.exists():
+        logger.info("No uncurated articles found")
+        return {
+            "status": "no_articles",
+            "message": "No articles need curation"
+        }
+    
+    logger.info(f"Found {uncurated_articles.count()} articles to curate")
+    
+    # Initialize AI service
+    try:
+        ai_service = get_ai_service()
+    except Exception as e:
+        logger.error(f"Failed to initialize AI service: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"AI service initialization failed: {str(e)}"
+        }
+    
+    articles_processed = 0
+    articles_created = 0
+    errors = []
+    
+    for article in uncurated_articles:
+        try:
+            logger.info(f"Curating article: {article.title[:60]}...")
+            
+            # Prepare article text (combine available content)
+            article_text = article.summary_feed
+            if article.raw_html:
+                # Use raw_html if available (truncate to reasonable length)
+                article_text = article.raw_html[:10000] + " " + article.summary_feed
+            
+            # Generate summaries
+            try:
+                summary_short, summary_detailed = ai_service.generate_summaries(
+                    article_text, 
+                    article.title
+                )
+            except AIServiceError as e:
+                logger.error(f"Failed to generate summaries for {article.id}: {str(e)}")
+                # Use fallback summaries
+                summary_short = article.title[:500]
+                summary_detailed = article.summary_feed[:2000] if article.summary_feed else article.title
+            
+            # Calculate relevance score
+            try:
+                relevance_score = ai_service.calculate_relevance_score(
+                    article_text,
+                    article.title
+                )
+            except AIServiceError as e:
+                logger.error(f"Failed to calculate relevance for {article.id}: {str(e)}")
+                relevance_score = 0.5  # Default fallback
+            
+            # Generate tags
+            try:
+                ai_tags = ai_service.generate_tags(article_text, article.title)
+            except AIServiceError as e:
+                logger.error(f"Failed to generate tags for {article.id}: {str(e)}")
+                ai_tags = ['ai', 'technology']  # Default fallback
+            
+            # Generate embeddings
+            try:
+                embedding = ai_service.generate_embeddings(summary_detailed)
+            except AIServiceError as e:
+                logger.error(f"Failed to generate embeddings for {article.id}: {str(e)}")
+                embedding = [0.0] * 1536  # Zero vector fallback
+            
+            # Select cover media (first image if available)
+            cover_media = None
+            media_assets = article.media_assets.filter(type='image').first()
+            if media_assets:
+                cover_media = media_assets
+            
+            # Create ArticleCurated entry
+            with transaction.atomic():
+                curated_article = ArticleCurated.objects.create(
+                    raw_article=article,
+                    relevance_score=relevance_score,
+                    summary_short=summary_short,
+                    summary_detailed=summary_detailed,
+                    ai_tags=ai_tags,
+                    cover_media=cover_media,
+                    embedding=embedding
+                )
+            
+            articles_created += 1
+            articles_processed += 1
+            
+            logger.info(
+                f"Successfully curated article {article.id}: "
+                f"relevance={relevance_score:.2f}, tags={len(ai_tags)}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error curating article {article.id}: {str(e)}")
+            errors.append({
+                'article_id': article.id,
+                'title': article.title[:100],
+                'error': str(e)
+            })
+            articles_processed += 1
+            continue
+    
+    execution_time = time.time() - start_time
+    
+    result = {
+        "status": "completed",
+        "articles_processed": articles_processed,
+        "articles_created": articles_created,
+        "errors_count": len(errors),
+        "errors": errors[:5],  # Include first 5 errors
+        "execution_time_seconds": round(execution_time, 2)
+    }
+    
+    logger.info(
+        f"Curation task completed: {articles_created}/{articles_processed} articles curated "
+        f"in {execution_time:.2f}s"
+    )
+    
+    return result
 
 
 @shared_task
