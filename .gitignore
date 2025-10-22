@@ -49,3 +49,21 @@ media/audio_segments/*.mp3
 # Django static files (generated)
 backend/staticfiles/
 
+# Screenshots and images (except assets)
+*.png
+*.jpg
+*.jpeg
+!frontend/src/assets/**/*.png
+!frontend/src/assets/**/*.jpg
+!frontend/src/assets/**/*.jpeg
+
+# Backup files
+*.backup
+
+# Development scripts (keep only necessary ones)
+test_*.py
+test_*.js
+
+# Development data
+data/
+

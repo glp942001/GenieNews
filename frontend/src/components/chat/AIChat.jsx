@@ -156,23 +156,23 @@ const AIChat = ({ summaryRequest, onSummaryProcessed }) => {
     if (message.type === 'article-summary') {
       return (
         <div className="flex justify-start">
-          <div className="max-w-[90%] bg-gradient-to-br from-purple-700 to-purple-800 text-white p-3 rounded-lg shadow-lg">
-            <div className="mb-2 pb-2 border-b border-purple-500">
+          <div className="max-w-[90%] bg-gray-700 text-gray-100 p-3 rounded-lg shadow-lg">
+            <div className="mb-2 pb-2 border-b border-gray-600">
               <h4 className="font-bold text-sm mb-1">{message.title}</h4>
-              <p className="text-xs text-purple-200">{message.source}</p>
+              <p className="text-xs text-gray-300">{message.source}</p>
             </div>
             
             {message.sections.categories && Array.isArray(message.sections.categories) ? (
               <div className="space-y-4">
                 {message.sections.categories.map((category, catIndex) => (
                   <div key={catIndex} className="space-y-2">
-                    <h5 className="font-semibold text-sm text-purple-200 border-b border-purple-600 pb-1">
+                    <h5 className="font-semibold text-sm text-gray-300 border-b border-gray-600 pb-1">
                       {category.name}
                     </h5>
                     <ul className="space-y-2">
                       {category.points.map((point, pointIndex) => (
                         <li key={pointIndex} className="text-xs leading-relaxed flex items-start">
-                          <span className="text-purple-300 mr-2 mt-0.5">•</span>
+                          <span className="text-gray-400 mr-2 mt-0.5">•</span>
                           <span className="flex-1">{point}</span>
                         </li>
                       ))}
@@ -182,11 +182,11 @@ const AIChat = ({ summaryRequest, onSummaryProcessed }) => {
               </div>
             ) : Array.isArray(message.sections.keypoints) && message.sections.keypoints.length > 0 ? (
               <div className="space-y-1">
-                <h5 className="font-semibold text-xs mb-1 text-purple-200">🔑 Key Points</h5>
+                <h5 className="font-semibold text-xs mb-1 text-gray-300">🔑 Key Points</h5>
                 <ul className="space-y-0.5">
                   {message.sections.keypoints.map((point, index) => (
                     <li key={index} className="text-xs leading-relaxed flex items-start">
-                      <span className="text-purple-300 mr-1 mt-0.5">•</span>
+                      <span className="text-gray-400 mr-1 mt-0.5">•</span>
                       <span>{point.replace('• ', '')}</span>
                     </li>
                   ))}
@@ -195,23 +195,23 @@ const AIChat = ({ summaryRequest, onSummaryProcessed }) => {
             ) : message.sections.what ? (
               <div className="space-y-3">
                 <div>
-                  <h5 className="font-semibold text-sm mb-1 text-purple-200">📋 WHAT</h5>
+                  <h5 className="font-semibold text-sm mb-1 text-gray-300">📋 WHAT</h5>
                   <p className="text-sm leading-relaxed">{message.sections.what}</p>
                 </div>
                 
                 <div>
-                  <h5 className="font-semibold text-sm mb-1 text-purple-200">💡 WHY IT MATTERS</h5>
+                  <h5 className="font-semibold text-sm mb-1 text-gray-300">💡 WHY IT MATTERS</h5>
                   <p className="text-sm leading-relaxed">{message.sections.why_it_matters}</p>
                 </div>
                 
                 <div>
-                  <h5 className="font-semibold text-sm mb-1 text-purple-200">🎯 TAKEAWAY</h5>
+                  <h5 className="font-semibold text-sm mb-1 text-gray-300">🎯 TAKEAWAY</h5>
                   <p className="text-sm leading-relaxed">{message.sections.takeaway}</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
-                <h5 className="font-semibold text-sm mb-2 text-purple-200">📄 Summary</h5>
+                <h5 className="font-semibold text-sm mb-2 text-gray-300">📄 Summary</h5>
                 <p className="text-sm leading-relaxed text-gray-300">
                   No structured summary available for this article.
                 </p>
@@ -222,12 +222,12 @@ const AIChat = ({ summaryRequest, onSummaryProcessed }) => {
               href={message.url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="inline-block mt-3 text-xs text-purple-200 hover:text-white underline"
+              className="inline-block mt-3 text-xs text-gray-300 hover:text-white underline"
             >
               Read full article →
             </a>
             
-            <p className="text-xs mt-2 text-purple-300">
+            <p className="text-xs mt-2 text-gray-400">
               {message.timestamp.toLocaleTimeString([], { 
                 hour: '2-digit', 
                 minute: '2-digit' 
