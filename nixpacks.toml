@@ -1,0 +1,22 @@
+# Sevalla Nixpacks Configuration for GenieNews
+# This file tells Sevalla how to build and run your application
+
+[phases.setup]
+# Install system dependencies for PostgreSQL and other tools
+nixPkgs = ['postgresql', 'nodejs-18_x']
+
+[phases.install]
+# Install Python dependencies
+cmds = ['cd backend && pip install -r requirements.txt']
+
+[phases.build]
+# Build the React frontend
+cmds = [
+  'cd frontend && npm ci && npm run build',
+  'cd backend && python manage.py collectstatic --noinput'
+]
+
+[start]
+# Start the application with Gunicorn
+cmd = 'cd backend && python manage.py migrate --noinput && gunicorn genienews_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120'
+

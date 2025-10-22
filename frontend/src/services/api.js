@@ -2,10 +2,11 @@
  * API service for fetching articles from the GenieNews backend
  */
 
-// Use environment variable for API URL, fallback to localhost for development
+// Use environment variable for API URL, fallback to relative path for production
+// In production on Sevalla, the frontend and backend are served from the same domain
 const API_BASE_URL = import.meta.env.VITE_API_URL 
   ? `${import.meta.env.VITE_API_URL}/api` 
-  : 'http://localhost:8000/api';
+  : (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api');
 
 // Debug logging to help troubleshoot
 console.log('API Configuration:', {

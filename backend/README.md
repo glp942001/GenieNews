@@ -2,6 +2,13 @@
 
 Django REST API backend for GenieNews with PostgreSQL (pgvector), Redis, and Celery for AI-powered news curation.
 
+## Quick Links
+
+- **Main README**: [../README.md](../README.md)
+- **Setup Guide**: [../SETUP.md](../SETUP.md)
+- **Deployment Guide**: [../DEPLOYMENT.md](../DEPLOYMENT.md)
+- **Frontend README**: [../frontend/README.md](../frontend/README.md)
+
 ## Features
 
 - Django 5.2 with Django REST Framework

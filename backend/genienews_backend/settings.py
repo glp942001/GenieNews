@@ -36,7 +36,7 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 if IS_PRODUCTION:
-    ALLOWED_HOSTS.extend(['.fly.dev', '.vercel.app'])
+    ALLOWED_HOSTS.extend(['.sevalla.com', '.sevalla.app'])
 
 
 # Application definition
@@ -73,7 +73,7 @@ ROOT_URLCONF = 'genienews_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, '..', 'frontend', 'dist')],  # React build directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -150,6 +150,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Include React build static files
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, '..', 'frontend', 'dist', 'assets'),  # React build assets
+]
 
 # Use WhiteNoise for static file serving in production
 if IS_PRODUCTION:
