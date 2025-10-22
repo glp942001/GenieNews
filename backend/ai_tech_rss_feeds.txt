@@ -1,0 +1,43 @@
+# AI and Tech News RSS Feeds - ACTUAL RSS/Atom URLs
+# Format: Source Name: RSS Feed URL
+
+# Major Tech News with AI Coverage
+TechCrunch AI: https://techcrunch.com/category/artificial-intelligence/feed/
+VentureBeat AI: https://venturebeat.com/category/ai/feed/
+The Verge: https://www.theverge.com/rss/index.xml
+Ars Technica: https://feeds.arstechnica.com/arstechnica/technology-lab
+WIRED: https://www.wired.com/feed/tag/ai/latest/rss
+MIT Technology Review: https://www.technologyreview.com/feed/
+ZDNet: https://www.zdnet.com/news/rss.xml
+
+# AI-Specific News Sites
+AI News: https://www.artificialintelligence-news.com/feed/
+SyncedReview: https://syncedreview.com/feed/
+Unite.AI: https://www.unite.ai/feed/
+Machine Learning News: https://mltechnologies.com/feed/
+
+# Research Blogs (Company Blogs)
+Google AI Blog: https://blog.research.google/feeds/posts/default
+OpenAI Blog: https://openai.com/blog/rss/
+Meta AI: https://ai.meta.com/blog/rss/
+Microsoft Research: https://www.microsoft.com/en-us/research/feed/
+DeepMind: https://deepmind.google/blog/rss.xml
+NVIDIA Blog: https://blogs.nvidia.com/feed/
+AWS Machine Learning: https://aws.amazon.com/blogs/machine-learning/feed/
+Anthropic: https://www.anthropic.com/news/rss.xml
+
+# Academic/Research
+MIT News AI: https://news.mit.edu/rss/topic/artificial-intelligence2
+Stanford HAI: https://hai.stanford.edu/news/rss.xml
+Berkeley AI Research: https://bair.berkeley.edu/blog/feed.xml
+
+# Developer Communities
+Hugging Face Blog: https://huggingface.co/blog/feed.xml
+Papers With Code: https://paperswithcode.com/rss.xml
+Towards Data Science: https://towardsdatascience.com/feed
+KDnuggets: https://feeds.feedburner.com/kdnuggets-data-mining-analytics
+
+# General Tech with Strong AI Coverage
+The Information: https://www.theinformation.com/feed
+Hacker News: https://hnrss.org/frontpage
+

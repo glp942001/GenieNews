@@ -161,3 +161,22 @@ class FeedIngestionLog(models.Model):
             models.Index(fields=['source', '-started_at']),
             models.Index(fields=['status']),
         ]
+
+
+class AudioSegment(models.Model):
+    """Daily AI-generated audio news segment."""
+    date = models.DateField(unique=True, db_index=True)
+    audio_file = models.FileField(upload_to='audio_segments/')
+    script_text = models.TextField()
+    article_ids = models.JSONField(default=list)
+    duration_seconds = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Audio Segment - {self.date}"
+    
+    class Meta:
+        ordering = ['-date']
+        indexes = [
+            models.Index(fields=['-date']),
+        ]

@@ -26,6 +26,11 @@ AI_RELEVANCE_KEYWORDS=artificial intelligence,machine learning,AI,deep learning,
 AI_RELEVANCE_THRESHOLD=0.3
 AI_BATCH_SIZE=20
 
+# Text-to-Speech Configuration (for audio news generation)
+TTS_VOICE=nova              # Options: alloy, echo, fable, onyx, nova, shimmer
+TTS_SPEED=1.15             # 0.25 to 4.0 (1.0 = normal, 1.15 = 15% faster for ~5min content)
+TTS_MODEL=tts-1-hd         # tts-1 (faster) or tts-1-hd (better quality)
+
 See AI_CURATION_QUICKSTART.md for complete .env template.
 
 GET YOUR OPENAI API KEY:

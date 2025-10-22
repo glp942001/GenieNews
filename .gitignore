@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
@@ -13,6 +12,7 @@ build/
 .env
 .env.local
 .env.production
+.env.production.local
 
 # IDE
 .vscode/
@@ -33,4 +33,19 @@ __pycache__/
 .Python
 venv/
 env/
+
+# Database
+*.db
+*.sqlite3
+db.sqlite3
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Media files (audio generated at runtime)
+media/audio_segments/*.mp3
+
+# Django static files (generated)
+backend/staticfiles/
 

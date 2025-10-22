@@ -19,7 +19,7 @@ const Header = () => {
       backgroundRepeat: 'no-repeat'
     }}>
       {/* Title */}
-      <div className="py-8">
+      <div className="py-4">
         <h1 className="text-white text-4xl font-bold text-center">
           The AI Bazaar
         </h1>
@@ -27,13 +27,13 @@ const Header = () => {
       
       {/* Navigation Menu */}
       <nav>
-        <div className="max-w-7xl mx-auto px-6">
-          <ul className="flex justify-center space-x-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <ul className="flex justify-center space-x-4">
             {menuItems.map((item) => (
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`block py-4 px-4 text-lg font-medium transition-all ${
+                  className={`block py-3 px-3 text-lg font-medium transition-all ${
                     location.pathname === item.path
                       ? 'text-white border-b-2 border-white'
                       : 'text-purple-200 hover:text-white hover:border-b-2 hover:border-purple-300'

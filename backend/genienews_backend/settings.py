@@ -13,12 +13,16 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 # Load environment variables
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Production check
+IS_PRODUCTION = os.getenv('ENVIRONMENT') == 'production'
 
 
 # Quick-start development settings - unsuitable for production
@@ -31,6 +35,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-jml3u_s!1czxm2!w-0+
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+if IS_PRODUCTION:
+    ALLOWED_HOSTS.extend(['.fly.dev', '.vercel.app'])
 
 
 # Application definition
@@ -53,6 +59,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -84,16 +91,27 @@ WSGI_APPLICATION = 'genienews_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'genienews'),
-        'USER': os.getenv('DB_USER', 'genienews_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'genienews_password'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+if IS_PRODUCTION:
+    # Use DATABASE_URL in production (Fly.io, Render, etc.)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    # Local development database
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'genienews'),
+            'USER': os.getenv('DB_USER', 'genienews_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'genienews_password'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
@@ -131,6 +149,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Use WhiteNoise for static file serving in production
+if IS_PRODUCTION:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -138,7 +161,35 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True
+# In development, allow all origins for ease of use
+# In production, specify allowed origins
+if IS_PRODUCTION:
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+    ]
+    # Add production frontend URL from environment
+    frontend_url = os.getenv('FRONTEND_URL')
+    if frontend_url:
+        CORS_ALLOWED_ORIGINS.append(frontend_url)
+else:
+    # Development: allow all origins
+    CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'cache-control',
+    'pragma',
+    'expires',
+]
 
 # Django REST Framework
 REST_FRAMEWORK = {
@@ -150,8 +201,14 @@ REST_FRAMEWORK = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+# Use REDIS_URL in production (from Upstash or Fly.io Redis)
+if IS_PRODUCTION:
+    redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    CELERY_BROKER_URL = redis_url
+    CELERY_RESULT_BACKEND = redis_url
+else:
+    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -201,3 +258,12 @@ AI_RELEVANCE_KEYWORDS = os.getenv(
 ).split(',')
 AI_RELEVANCE_THRESHOLD = float(os.getenv('AI_RELEVANCE_THRESHOLD', '0.3'))
 AI_BATCH_SIZE = int(os.getenv('AI_BATCH_SIZE', '20'))
+
+# Text-to-Speech (TTS) Configuration for Audio Generation
+TTS_VOICE = os.getenv('TTS_VOICE', 'nova')  # Options: alloy, echo, fable, onyx, nova, shimmer, maple (if available)
+TTS_SPEED = float(os.getenv('TTS_SPEED', '1.15'))  # Speed: 0.25 to 4.0 (1.15 = 15% faster for ~5min content)
+TTS_MODEL = os.getenv('TTS_MODEL', 'tts-1-hd')  # Options: tts-1, tts-1-hd
+
+# Media Files Configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

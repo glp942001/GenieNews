@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from .models import Source, ArticleRaw, MediaAsset, ArticleCurated, UserInteraction, FeedIngestionLog
+from .models import Source, ArticleRaw, MediaAsset, ArticleCurated, UserInteraction, FeedIngestionLog, AudioSegment
 
 
 @admin.register(Source)
@@ -196,3 +196,66 @@ class FeedIngestionLogAdmin(admin.ModelAdmin):
     raw_id_fields = ['source']
     date_hierarchy = 'started_at'
     readonly_fields = ['started_at', 'completed_at', 'execution_time_seconds']
+
+
+@admin.register(AudioSegment)
+class AudioSegmentAdmin(admin.ModelAdmin):
+    list_display = ['date', 'article_count_display', 'duration_display', 'has_audio', 'created_at']
+    list_filter = ['date', 'created_at']
+    search_fields = ['script_text']
+    date_hierarchy = 'date'
+    readonly_fields = ['created_at', 'script_preview', 'audio_player']
+    
+    fieldsets = (
+        ('Basic Info', {
+            'fields': ('date', 'duration_seconds', 'created_at')
+        }),
+        ('Content', {
+            'fields': ('audio_file', 'audio_player', 'article_ids', 'script_preview')
+        }),
+    )
+    
+    def article_count_display(self, obj):
+        """Display count of articles in segment."""
+        count = len(obj.article_ids) if obj.article_ids else 0
+        return f"{count} articles"
+    article_count_display.short_description = 'Articles'
+    
+    def duration_display(self, obj):
+        """Display duration in minutes:seconds format."""
+        if obj.duration_seconds:
+            mins = obj.duration_seconds // 60
+            secs = obj.duration_seconds % 60
+            return f"{mins}:{secs:02d}"
+        return "~5:00"
+    duration_display.short_description = 'Duration'
+    
+    def has_audio(self, obj):
+        """Show if audio file exists."""
+        if obj.audio_file:
+            return format_html('<span style="color: green;">✓ Audio</span>')
+        return format_html('<span style="color: red;">✗ Missing</span>')
+    has_audio.short_description = 'Audio File'
+    
+    def script_preview(self, obj):
+        """Display script preview."""
+        if obj.script_text:
+            preview = obj.script_text[:500] + '...' if len(obj.script_text) > 500 else obj.script_text
+            return format_html(
+                '<div style="padding: 10px; background: #f5f5f5; border-radius: 4px; '
+                'white-space: pre-wrap; font-family: monospace; max-height: 300px; overflow-y: auto;">{}</div>',
+                preview
+            )
+        return 'No script text'
+    script_preview.short_description = 'Script Preview'
+    
+    def audio_player(self, obj):
+        """Display audio player if file exists."""
+        if obj.audio_file:
+            return format_html(
+                '<audio controls style="width: 100%;"><source src="{}" type="audio/mpeg">'
+                'Your browser does not support the audio element.</audio>',
+                obj.audio_file.url
+            )
+        return 'No audio file'
+    audio_player.short_description = 'Audio Player'

@@ -487,6 +487,27 @@ def curate_articles_task(batch_size: int = None):
             media_assets = article.media_assets.filter(type='image').first()
             if media_assets:
                 cover_media = media_assets
+            else:
+                # If no images from RSS, try to extract from HTML content
+                if article.raw_html:
+                    from .utils import extract_best_image_from_html
+                    
+                    best_image = extract_best_image_from_html(article.raw_html, article.url)
+                    if best_image:
+                        # Create MediaAsset for the extracted image
+                        media_asset, created = MediaAsset.objects.get_or_create(
+                            source_url=best_image['url'],
+                            defaults={
+                                'type': 'image',
+                                'width': best_image.get('width'),
+                                'height': best_image.get('height'),
+                                'mime_type': 'image/jpeg'  # Default
+                            }
+                        )
+                        # Link to article
+                        article.media_assets.add(media_asset)
+                        cover_media = media_asset
+                        logger.info(f"Extracted cover image from HTML for article {article.id}")
             
             # Create ArticleCurated entry
             with transaction.atomic():
@@ -534,7 +555,131 @@ def curate_articles_task(batch_size: int = None):
         f"in {execution_time:.2f}s"
     )
     
+    # Automatically generate audio segment after curation
+    if articles_created > 0:
+        try:
+            logger.info("Triggering automatic audio segment generation after curation")
+            generate_audio_segment_task.delay()
+        except Exception as e:
+            logger.error(f"Failed to trigger audio generation: {str(e)}")
+    
     return result
+
+
+@shared_task
+def generate_audio_segment_task():
+    """
+    Generate daily audio news segment after article curation.
+    
+    This task:
+    1. Checks if today's audio segment already exists
+    2. If not, generates script from top 8 articles
+    3. Converts script to audio using OpenAI TTS
+    4. Saves audio file and metadata to database
+    """
+    from django.conf import settings
+    from datetime import date
+    import os
+    from .models import ArticleCurated, AudioSegment
+    from .ai_service import get_ai_service
+    
+    logger.info("Starting audio segment generation task")
+    start_time = time.time()
+    today = date.today()
+    
+    try:
+        # Check if today's audio already exists
+        existing_segment = AudioSegment.objects.filter(date=today).first()
+        if existing_segment:
+            logger.info(f"Audio segment for {today} already exists, skipping generation")
+            return {
+                "status": "skipped",
+                "message": "Audio segment already exists for today",
+                "date": str(today)
+            }
+        
+        # Fetch top 8 articles by relevance score
+        top_articles = ArticleCurated.objects.select_related(
+            'raw_article',
+            'raw_article__source'
+        ).order_by('-relevance_score')[:8]
+        
+        if not top_articles:
+            logger.warning("No curated articles available for audio generation")
+            return {
+                "status": "error",
+                "message": "No curated articles available"
+            }
+        
+        logger.info(f"Found {top_articles.count()} articles for audio segment")
+        
+        # Build articles context
+        articles_context = []
+        article_ids = []
+        for article in top_articles:
+            articles_context.append({
+                'title': article.raw_article.title,
+                'source_name': article.raw_article.source.name,
+                'summary_short': article.summary_short,
+                'summary_detailed': article.summary_detailed,
+                'url': article.raw_article.url
+            })
+            article_ids.append(article.id)
+        
+        # Initialize AI service
+        ai_service = get_ai_service()
+        
+        # Generate news script
+        logger.info("Generating news script...")
+        script_text = ai_service.generate_news_script(articles_context)
+        logger.info(f"Script generated: {len(script_text)} characters")
+        
+        # Create media directory if doesn't exist
+        audio_dir = os.path.join(settings.MEDIA_ROOT, 'audio_segments')
+        os.makedirs(audio_dir, exist_ok=True)
+        
+        # Generate audio file
+        filename = f"{today.isoformat()}.mp3"
+        audio_path = os.path.join(audio_dir, filename)
+        
+        logger.info(f"Generating audio file: {filename}")
+        ai_service.generate_audio_from_script(script_text, audio_path)
+        
+        # Calculate approximate duration
+        word_count = len(script_text) / 5
+        duration_seconds = int((word_count / 150) * 60)
+        
+        # Save to database
+        audio_segment = AudioSegment.objects.create(
+            date=today,
+            audio_file=f"audio_segments/{filename}",
+            script_text=script_text,
+            article_ids=article_ids,
+            duration_seconds=duration_seconds
+        )
+        
+        execution_time = time.time() - start_time
+        
+        logger.info(
+            f"Audio segment generated successfully: {filename} "
+            f"({duration_seconds}s duration, {execution_time:.2f}s generation time)"
+        )
+        
+        return {
+            "status": "success",
+            "date": str(today),
+            "filename": filename,
+            "article_count": len(article_ids),
+            "duration_seconds": duration_seconds,
+            "execution_time": round(execution_time, 2)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to generate audio segment: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
 @shared_task

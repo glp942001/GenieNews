@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Source, ArticleRaw, MediaAsset, ArticleCurated, UserInteraction
+from .models import Source, ArticleRaw, MediaAsset, ArticleCurated, UserInteraction, AudioSegment
 
 
 class SourceSerializer(serializers.ModelSerializer):
@@ -9,9 +9,11 @@ class SourceSerializer(serializers.ModelSerializer):
 
 
 class MediaAssetSerializer(serializers.ModelSerializer):
+    url = serializers.CharField(source='source_url', read_only=True)
+    
     class Meta:
         model = MediaAsset
-        fields = ['id', 'type', 'source_url', 'proxy_url', 'width', 'height', 'mime_type']
+        fields = ['id', 'type', 'url', 'source_url', 'proxy_url', 'width', 'height', 'mime_type']
 
 
 class ArticleRawSerializer(serializers.ModelSerializer):
@@ -40,6 +42,7 @@ class ArticleCuratedListSerializer(serializers.ModelSerializer):
             'published_at',
             'relevance_score',
             'summary_short',
+            'summary_detailed',  # Added detailed summary for rich excerpts
             'ai_tags',
             'cover_media',
             'created_at',
@@ -70,4 +73,66 @@ class UserInteractionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserInteraction
         fields = ['id', 'user_id', 'article', 'action', 'timestamp']
+
+
+class StructuredSummarySerializer(serializers.Serializer):
+    """Serializer for structured article summaries."""
+    article_id = serializers.IntegerField()
+    title = serializers.CharField()
+    source = serializers.CharField()
+    url = serializers.URLField()
+    sections = serializers.DictField()  # Allow any dict structure
+    timestamp = serializers.DateTimeField()
+
+
+class ChatMessageSerializer(serializers.Serializer):
+    """Serializer for chat message requests and responses."""
+    message = serializers.CharField(max_length=2000, required=True)
+    history = serializers.ListField(
+        child=serializers.DictField(),
+        required=False,
+        default=list
+    )
+    
+    def validate_history(self, value):
+        """Validate conversation history format."""
+        for msg in value:
+            if 'role' not in msg or 'content' not in msg:
+                raise serializers.ValidationError(
+                    "Each history item must have 'role' and 'content' fields"
+                )
+            if msg['role'] not in ['user', 'assistant']:
+                raise serializers.ValidationError(
+                    "Role must be either 'user' or 'assistant'"
+                )
+        return value
+
+
+class ChatResponseSerializer(serializers.Serializer):
+    """Serializer for chat AI responses."""
+    response = serializers.CharField()
+    timestamp = serializers.DateTimeField()
+
+
+class AudioSegmentSerializer(serializers.ModelSerializer):
+    """Serializer for daily audio news segments."""
+    audio_url = serializers.SerializerMethodField()
+    article_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = AudioSegment
+        fields = ['id', 'date', 'audio_url', 'script_text', 'article_count', 'duration_seconds', 'created_at']
+    
+    def get_audio_url(self, obj):
+        """Return full URL for audio file."""
+        if obj.audio_file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.audio_file.url)
+            return obj.audio_file.url
+        return None
+    
+    def get_article_count(self, obj):
+        """Return count of articles in this segment."""
+        return len(obj.article_ids) if obj.article_ids else 0
 
